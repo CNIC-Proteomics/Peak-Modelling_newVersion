@@ -56,7 +56,7 @@ def concatInfiles(infile):
     df['Filename'] = df['Filename'].astype('category')
     return df
 
-def generate_histogram(df, bin_width):
+def generate_histogram(df, bin_width, dm0, dm1):
     '''
     Group by DeltaMass into bins of the size specified.
     '''
@@ -72,8 +72,8 @@ def generate_histogram(df, bin_width):
     df.reset_index(drop=True, inplace=True)
     
     # make bins
-    bins = list(np.arange(int(round(df['cal_dm_mh'][0])),
-                          int(round(df['cal_dm_mh'].iloc[-1]))+bin_width,
+    bins = list(np.arange(dm0,
+                          dm1+bin_width,
                           bin_width))
     bins = [round(x, _decimal_places(bin_width)) for x in bins]
     df['bin'] = pd.cut(df['cal_dm_mh'], bins=bins)
@@ -233,6 +233,9 @@ def main(args):
     bins = float(config._sections['PeakModeller']['bins'])
     slope_points = int(config._sections['PeakModeller']['slope_points'])
     smooth_points = int(config._sections['PeakModeller']['smooth_points'])
+
+    dm0 = int(config._sections['PeakSelector']['dm0'])
+    dm1 = int(config._sections['PeakSelector']['dm1'])
     
     model_table = pd.read_csv(args.modelling_table, sep="\t")
     
@@ -259,9 +262,6 @@ def main(args):
         #from all the infiles list keep only those present in the filtered_files list
         infiles_filtered = [f for f in infiles if any(sub in f for sub in filtered_files)]
         #concat those files
-        '''df_iterator = []
-        for infile_filtered in infiles_filtered:
-            df_iterator.append(concatInfiles(infile_filtered))'''
         with concurrent.futures.ProcessPoolExecutor(max_workers=args.n_workers) as executor:            
             df_iterator = executor.map(concatInfiles, infiles_filtered)
         df = pd.concat(df_iterator)
@@ -269,15 +269,6 @@ def main(args):
         #save the concat df in the dict, using the group name (and path of first infile) as key
         df_dict[os.path.join(os.path.dirname(infiles_filtered[0]),f"Group_{model_group}")] = df
     
-         
-    
-    ''' Old Version:
-    logging.info("Concat input files...")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=args.n_workers) as executor:            
-        df = executor.map(concatInfiles, infiles)
-    df = pd.concat(df)
-    df.reset_index(drop=True, inplace=True)
-    '''
 
     try:
         # Samuel: iter over each dataframe and create the output for each dataframe
@@ -313,7 +304,7 @@ def main(args):
             
                 logging.info(f"Generating DMHistogram for {output_path.split(os.sep)[-1]}...")
                 # make bins
-                df_copy, bins_df = generate_histogram(df_copy, bins)
+                df_copy, bins_df = generate_histogram(df_copy, bins, dm0, dm1)
                 bins_df = first_derivative(bins_df, #does 1st smoothing pass and 2nd normal pass
                                         slope_points//2,
                                         smooth_points//2)  
