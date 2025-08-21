@@ -19,6 +19,7 @@ import configparser
 import glob
 import logging
 import pandas as pd
+import pathlib
 import numpy as np
 import concurrent.futures
 from tqdm import tqdm
@@ -409,4 +410,11 @@ if __name__ == '__main__':
     # start main function
     logging.info('start script: '+"{0}".format(" ".join([x for x in sys.argv])))
     main(args)
+    # merge all the feather files into one and save it
+    logging.info('merging all feather files')
+    files_path = pathlib.Path(os.path.dirname(args.infile))
+    feather_files = list(files_path.glob("*DMTable.feather"))
+    dfs = [pd.read_feather(f) for f in feather_files]
+    combined_df = pd.concat(dfs, ignore_index=True)
+    combined_df.to_feather(os.path.join(os.path.dirname(args.infile), 'DMTable.feather'))
     logging.info('end script')
