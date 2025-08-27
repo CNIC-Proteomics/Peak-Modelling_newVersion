@@ -500,12 +500,12 @@ def main(args):
             
         # now lets select those peaks presents in X% or more of the lists
         dict_intergroups[apex_group] = select_commonPeaks(dict_intragroups, completeness, peaks_diff)
-        logging.info("Peaks in Apex Group " + apex_group + ": " + str(len(dict_intergroups[apex_group])) + "\n")
+        logging.info("Peaks in Apex Group " + str(apex_group) + ": " + str(len(dict_intergroups[apex_group])) + "\n")
         #write the apexlist of this group
-        outfile = os.path.join(output_dir, 'ApexList_' + apex_group + '.txt')
+        outfile = os.path.join(output_dir, 'ApexList_' + str(apex_group) + '.txt')
         with open(outfile, 'w') as f:
             for apex in dict_intergroups[apex_group]:
-                f.write("%s\n" % apex)
+                f.write("%s\n" % str(apex))
     
     #finally select the peaks of different apex groups
     final_apexlist = select_uniquePeaks(dict_intergroups, peaks_diff)
@@ -589,4 +589,5 @@ if __name__ == '__main__':
     # start main function
     logging.info('start script: '+"{0}".format(" ".join([x for x in sys.argv])))
     main(args)
+
     logging.info('end script')
